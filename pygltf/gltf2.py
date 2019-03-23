@@ -707,10 +707,10 @@ class Skin(Object):
 
 
 class Texture(Object):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, sampler=None, source=None, *args, **kwargs):
         super().__init__(*args, **kwargs) 
-        self.sampler = kwargs.get('sampler')
-        self.source = kwargs.get('source')
+        self.sampler = sampler
+        self.source = source
     def togltf(self):
         result = super().togltf()
         if self.sampler:
