@@ -292,30 +292,57 @@ class Accessor(Object):
         self.normalized = False
         self.count = count
         self.type = type
-        self.max = None
-        self.min = None
+        self.max = kwargs.get("max")
+        self.min = kwargs.get("min")
+        self.sparse = kwargs.get("sparse")
     def togltf(self):
         result = super().togltf()
         result["bufferView"] = self.bufferView.key
         result["componentType"] = self.componentType.value
         result["count"] = self.count
         result["type"] = self.type.value
-        if self.bufferView:
-            result["bufferView"] = self.bufferView.key
         if self.byteOffset is not None:
             result["byteOffset"] = self.byteOffset
         if self.max:
             result["max"] = self.max
         if self.min:
             result["min"] = self.min
+        if self.sparse:
+            result["sparse"] = self.sparse.togltf()
         return result
 
 
-#TODO
-class Sparse(Object):
-    pass
+class AccessorSparse(object):
+    def __init__(self, count, indices, values, *args, **kwargs):
+        super().__init__(*args, **kwargs) 
+        self.count = count
+        self.indices = indices
+        self.values = values
+    def togltf(self):
+        result = {}
+        result["count"] = self.count
+        result["indices"] = self.indices
+        result["values"] = self.values
+        return result
 
-Accessor.Sparse = Sparse
+Accessor.Sparse = AccessorSparse
+
+
+class AccessorSparseIndices(object):
+    def __init__(self, bufferView, byteOffset=None, componentType=ComponentType.UNSIGNED_BYTE, *args, **kwargs):
+        super().__init__(*args, **kwargs) 
+        self.bufferView = bufferView
+        self.byteOffset = byteOffset
+        self.componentType = componentType
+    def togltf(self):
+        result = {}
+        result["bufferView"] = self.bufferView.key
+        result["componentType"] = self.componentType.value
+        if self.byteOffset is not None:
+            result["byteOffset"] = self.byteOffset
+        return result
+
+AccessorSparse.Indices = AccessorSparseIndices
 
 
 #TODO
@@ -359,9 +386,59 @@ class BufferView(Object):
         return result
 
 
-#TODO
 class Camera(Object):
-    pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs) 
+        self.orthographic = kwargs.get("orthographic")
+        self.perspective = kwargs.get("perspective")
+        self.type = kwargs.get("type")
+    def togltf(self):
+        result = super().togltf()
+        if self.orthographic:
+            result["orthographic"] = self.orthographic.togltf()
+        if self.perspective:
+            result["perspective"] = self.perspective.togltf()
+        if self.type:
+            result["type"] = self.type
+        return result
+
+
+class CameraOrthographic(Object):
+    def __init__(self, xmag, ymag, zfar, znear, *args, **kwargs):
+        super().__init__(*args, **kwargs) 
+        self.xmag = xmag
+        self.ymag = ymag
+        self.zfar = zfar
+        self.znear = znear
+    def togltf(self):
+        result = super().togltf()
+        result["xmag"] = self.xmag
+        result["ymag"] = self.ymag
+        result["zfar"] = self.zfar
+        result["znear"] = self.znear
+        return result
+
+Camera.Orthographic = CameraOrthographic
+
+
+class CameraPerspective(Object):
+    def __init__(self, yfov, znear, *args, **kwargs):
+        super().__init__(*args, **kwargs) 
+        self.aspectRatio = kwargs.get("aspectRatio")
+        self.yfov = yfov
+        self.zfar = kwargs.get("zfar")
+        self.znear = znear
+    def togltf(self):
+        result = super().togltf()
+        if self.aspectRatio:
+            result["aspectRatio"] = self.aspectRatio
+        result["yfov"] = self.yfov
+        if self.zfar:
+            result["zfar"] = self.zfar
+        result["znear"] = self.znear
+        return result
+
+Camera.Perspective = CameraPerspective
 
 
 class Image(Object):
@@ -371,7 +448,6 @@ class Image(Object):
         self.uri = uri
         self.mimeType = kwargs.get("mimeType")
         self.bufferView = kwargs.get("bufferView")
-        self.extras = kwargs.get("extras")
     def togltf(self):
         result = super().togltf()
         if self.uri:
@@ -379,9 +455,7 @@ class Image(Object):
         if self.mimeType:
             result["mimeType"] = self.mimeType
         if self.bufferView:
-            result["bufferView"] = self.bufferView
-        if self.extras:
-            result["extras"] = self.extras
+            result["bufferView"] = self.bufferView.key
         return result
 
 
@@ -413,10 +487,6 @@ class Material(Object):
             result["alphaCutoff"] = self.alphaCutoff
         if self.doubleSided:
             result["doubleSided"] = self.doubleSided
-        if self.extensions:
-            result["extensions"] = self.extensions
-        if self.extras:
-            result["extras"] = self.extras
         return result
 
 
@@ -499,6 +569,7 @@ class Node(Object):
         self.key         = -1
         self.camera      = kwargs.get('camera')
         self.children    = kwargs.get('children', [])
+        self.skin        = kwargs.get('skin')
         self.matrix      = kwargs.get('matrix')
         self.mesh        = kwargs.get('mesh')
         self.rotation    = kwargs.get('rotation')
@@ -511,6 +582,8 @@ class Node(Object):
             result["children"] = [child.key for child in self.children]
         if self.camera:
             result["camera"] = self.camera.key
+        if self.skin:
+            result["skin"] = self.skin.key
         if self.mesh:
             result["mesh"] = self.mesh.key
         if self.matrix:
@@ -535,7 +608,6 @@ class Sampler(Object):
         self.minFilter = kwargs.get('minFilter')
         self.wrapS = kwargs.get('wrapS')
         self.wrapT = kwargs.get('wrapT')
-        self.extras = kwargs.get("extras")
     def togltf(self):
         result = super().togltf()
         if self.magFilter:
@@ -546,8 +618,6 @@ class Sampler(Object):
             result["wrapS"] = self.wrapS.value
         if self.wrapT:
             result["wrapT"] = self.wrapT.value
-        if self.extras:
-            result["extras"] = self.extras
         return result
 
 
@@ -562,9 +632,21 @@ class Scene(Object):
         return result
 
 
-#TODO
 class Skin(Object):
-    pass
+    def __init__(self, joints, *args, **kwargs):
+        super().__init__(*args, **kwargs) 
+        self.key   = -1
+        self.inverseBindMatrices = kwargs.get('inverseBindMatrices')
+        self.joints = joints
+        self.skeleton = kwargs.get('skeleton')
+    def togltf(self):
+        result = super().togltf()
+        if self.inverseBindMatrices:
+            result["inverseBindMatrices"] = self.inverseBindMatrices.key
+        result["joints"] = joints
+        if self.skeleton:
+            result["skeleton"] = self.skeleton.key
+        return result
 
 
 class Texture(Object):
@@ -572,15 +654,12 @@ class Texture(Object):
         super().__init__(*args, **kwargs) 
         self.sampler = kwargs.get('sampler')
         self.source = kwargs.get('source')
-        self.extras = kwargs.get("extras")
     def togltf(self):
         result = super().togltf()
         if self.sampler:
             result["sampler"] = self.sampler.key
         if self.source:
             result["source"] = self.source.key
-        if self.extras:
-            result["extras"] = self.extras
         return result
 
 
@@ -589,12 +668,9 @@ class TextureInfo(Object):
         super().__init__(*args, **kwargs)
         self.index = index
         self.texCoord = kwargs.get("texCoord")
-        self.extras = kwargs.get("extras")
     def togltf(self):
         result = super().togltf()
         result["index"] = self.index.key
         if self.texCoord:
             result["texCoord"] = self.texCoord
-        if self.extras:
-            result["extras"] = self.extras
         return result
