@@ -327,7 +327,7 @@ class AccessorSparse(object):
         result = {}
         result["count"] = self.count
         result["indices"] = self.indices.togltf()
-        result["values"] = self.values
+        result["values"] = self.values.togltf()
         return result
 
 Accessor.Sparse = AccessorSparse
