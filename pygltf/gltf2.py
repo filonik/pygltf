@@ -77,6 +77,11 @@ class AlphaMode(enum.Enum):
     OPAQUE = "OPAQUE"
     MASK   = "MASK" 
     BLEND  = "BLEND"
+    
+class Interpolation(enum.Enum):
+    LINEAR      = "LINEAR"
+    STEP        = "STEP"
+    CUBICSPLINE = "CUBICSPLINE"
 
 class Filter(enum.Enum):
     NEAREST = 9728 
@@ -321,7 +326,7 @@ class AccessorSparse(object):
     def togltf(self):
         result = {}
         result["count"] = self.count
-        result["indices"] = self.indices
+        result["indices"] = self.indices.togltf()
         result["values"] = self.values
         return result
 
@@ -342,12 +347,65 @@ class AccessorSparseIndices(object):
             result["byteOffset"] = self.byteOffset
         return result
 
-AccessorSparse.Indices = AccessorSparseIndices
+Accessor.Sparse.Indices = AccessorSparseIndices
 
 
-#TODO
+class AccessorSparseValues(object):
+    def __init__(self, bufferView, byteOffset=None, *args, **kwargs):
+        super().__init__(*args, **kwargs) 
+        self.bufferView = bufferView
+        self.byteOffset = byteOffset
+    def togltf(self):
+        result = {}
+        result["bufferView"] = self.bufferView.key
+        if self.byteOffset is not None:
+            result["byteOffset"] = self.byteOffset
+        return result
+        
+Accessor.Sparse.Values = AccessorSparseValues
+
+
 class Animation(Object):
-    pass
+    def __init__(self, channels, samplers, *args, **kwargs):
+        super().__init__(*args, **kwargs) 
+        self.key   = -1
+        self.channels = channels
+        self.samplers = samplers
+    def togltf(self):
+        result = super().togltf()
+        result["channels"] = [channel.togltf() for channel in self.channels]
+        result["samplers"] = [sampler.togltf() for sampler in self.samplers]
+        return result
+
+
+class AnimationChannel(object):
+    def __init__(self, sampler, target, *args, **kwargs):
+        super().__init__(*args, **kwargs) 
+        self.sampler = sampler
+        self.target = target
+    def togltf(self):
+        result = {}
+        result["sampler"] = self.sampler
+        result["target"] = self.target.key
+        return result
+    
+Animation.Channel = AnimationChannel
+
+
+class AnimationSampler(Object):
+    def __init__(self, input, output, *args, **kwargs):
+        super().__init__(*args, **kwargs) 
+        self.input = input
+        self.output = output
+        self.interpolation = kwargs.get("interpolation")
+    def togltf(self):
+        result = {}
+        result["input"] = self.input.key
+        result["output"] = self.output.key
+        result["interpolation"] = self.interpolation.value
+        return result
+
+Animation.Sampler = AnimationSampler
 
 
 class Buffer(Object):
@@ -599,7 +657,6 @@ class Node(Object):
         return result
 
 
-#TODO
 class Sampler(Object):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs) 
