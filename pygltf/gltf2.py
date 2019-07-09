@@ -700,7 +700,8 @@ class Skin(Object):
         result = super().togltf()
         if self.inverseBindMatrices:
             result["inverseBindMatrices"] = self.inverseBindMatrices.key
-        result["joints"] = joints
+        if self.joints:
+            result["joints"] = [joint.key for joint in self.joints]
         if self.skeleton:
             result["skeleton"] = self.skeleton.key
         return result
